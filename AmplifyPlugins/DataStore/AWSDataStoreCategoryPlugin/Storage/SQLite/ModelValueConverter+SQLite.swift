@@ -43,7 +43,11 @@ public struct SQLiteModelValueConverter: ModelValueConverter {
         case .enum:
             return (value as? EnumPersistable)?.rawValue
         case .model:
-            return (value as? Model)?.id
+            // TODO CPK: this might not be correct
+            if let modelType = (value as? Model) {
+                return modelType.identifier(schema: modelType.schema).stringValue
+            }
+            return nil
         case .collection:
             // collections are not converted to SQL Binding since they represent a model association
             // and the foreign key lives on the other side of the association

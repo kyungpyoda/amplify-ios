@@ -11,7 +11,6 @@ import Foundation
 
 /// All persistent models should conform to the Model protocol.
 public protocol Model: Codable {
-
     /// Alias of Model identifier (i.e. primary key)
     typealias Identifier = String
 
@@ -26,6 +25,19 @@ public protocol Model: Codable {
     /// undefined behavior.
     var modelName: String { get }
 
-    /// The Model identifier (aka primary key)
-    var id: Identifier { get }
+    func identifier(schema: ModelSchema) -> AnyModelIdentifier
+}
+
+extension Model {
+    public func identifier(schema: ModelSchema) -> AnyModelIdentifier {
+        let fields: AnyModelIdentifier.Fields = schema.primaryKey.map {
+            let value = self[$0.name] as? Persistable ?? ""
+            return (name: $0.name, value: value)
+        }
+        if fields.count == 1, fields[0].name == ModelIdentifier<Self, ModelIdentifierFormat.Default>.defaultIdentifier {
+            return ModelIdentifier<Self, ModelIdentifierFormat.Default>(fields: fields)
+        } else {
+            return ModelIdentifier<Self, ModelIdentifierFormat.Custom>(fields: fields)
+        }
+    }
 }

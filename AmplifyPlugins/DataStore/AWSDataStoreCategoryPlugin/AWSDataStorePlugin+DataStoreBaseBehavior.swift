@@ -9,7 +9,6 @@ import Amplify
 import AWSPluginsCore
 
 extension AWSDataStorePlugin: DataStoreBaseBehavior {
-
     public func save<M: Model>(_ model: M,
                                where condition: QueryPredicate? = nil,
                                completion: @escaping DataStoreCallback<M>) {
@@ -31,7 +30,9 @@ extension AWSDataStorePlugin: DataStoreBaseBehavior {
                 throw DataStoreError.configuration("Unable to get storage adapter",
                                                    "")
             }
-            modelExists = try engine.storageAdapter.exists(modelSchema, withId: model.id, predicate: nil)
+            modelExists = try engine.storageAdapter.exists(modelSchema,
+                                                           withIdentifier: model.identifier(schema: modelSchema),
+                                                           predicate: nil)
         } catch {
             if let dataStoreError = error as? DataStoreError {
                 completion(.failure(dataStoreError))
@@ -60,6 +61,7 @@ extension AWSDataStorePlugin: DataStoreBaseBehavior {
         storageEngine.save(model, modelSchema: modelSchema, condition: condition, completion: publishingCompletion)
     }
 
+    @available(*, deprecated, message: "Use query(:byIdentifier:completion)")
     public func query<M: Model>(_ modelType: M.Type,
                                 byId id: String,
                                 completion: DataStoreCallback<M?>) {
@@ -78,6 +80,39 @@ extension AWSDataStorePlugin: DataStoreBaseBehavior {
                 completion(.failure(causedBy: error))
             }
         }
+    }
+
+    public func query<M: Model>(_ modelType: M.Type,
+                                byIdentifier identifier: String,
+                                completion: DataStoreCallback<M?>) where M: ModelIdentifiable,
+                                                                         M.IdentifierFormat == ModelIdentifierFormat.Default {
+        queryById(modelType, identifier: DefaultModelIdentifier<M>.makeDefault(id: identifier), completion: completion)
+    }
+
+    public func query<M: Model>(_ modelType: M.Type,
+                                byIdentifier identifier: M.Identifier,
+                                completion: DataStoreCallback<M?>) where M: ModelIdentifiable,
+                                                                         M.IdentifierFormat == ModelIdentifierFormat.Custom {
+        queryById(modelType, identifier: identifier, completion: completion)
+    }
+
+    private func queryById<M: Model>(_ modelType: M.Type,
+                                     identifier: AnyModelIdentifier,
+                                     completion: DataStoreCallback<M?>) {
+        initStorageEngineAndStartSync()
+        query(modelType, where: identifier.predicate, paginate: .firstResult) {
+            switch $0 {
+             case .success(let models):
+                 do {
+                     let first = try models.unique()
+                     completion(.success(first))
+                 } catch {
+                     completion(.failure(causedBy: error))
+                 }
+             case .failure(let error):
+                 completion(.failure(causedBy: error))
+             }
+         }
     }
 
     public func query<M: Model>(_ modelType: M.Type,
@@ -126,6 +161,30 @@ extension AWSDataStorePlugin: DataStoreBaseBehavior {
         }
     }
 
+    public func delete<M: Model>(_ modelType: M.Type,
+                                 withIdentifier identifier: String,
+                                 where predicate: QueryPredicate?,
+                                 completion: @escaping DataStoreCallback<Void>) where M: ModelIdentifiable,
+                                                                                      M.IdentifierFormat == ModelIdentifierFormat.Default {
+
+        storageEngine.delete(modelType,
+                             modelSchema: modelType.schema,
+                             withIdentifier: DefaultModelIdentifier<M>.makeDefault(id: identifier),
+                             predicate: predicate) { result in
+            self.onDeleteCompletion(result: result,
+                                    modelSchema: modelType.schema,
+                                    completion: completion)
+        }
+    }
+
+    public func delete<M: Model>(_ modelType: M.Type,
+                                 withIdentifier identifier: M.Identifier,
+                                 where predicate: QueryPredicate?,
+                                 completion: @escaping DataStoreCallback<Void>) where M: ModelIdentifiable,
+                                                                                      M.IdentifierFormat == ModelIdentifierFormat.Custom {
+        // TODO: do the thing
+    }
+
     public func delete<M: Model>(_ model: M,
                                  where predicate: QueryPredicate? = nil,
                                  completion: @escaping DataStoreCallback<Void>) {
@@ -139,7 +198,7 @@ extension AWSDataStorePlugin: DataStoreBaseBehavior {
         initStorageEngineAndStartSync()
         storageEngine.delete(type(of: model),
                              modelSchema: modelSchema,
-                             withId: model.id,
+                             withIdentifier: model.identifier(schema: modelSchema),
                              predicate: predicate) { result in
             self.onDeleteCompletion(result: result, modelSchema: modelSchema, completion: completion)
         }
@@ -252,7 +311,8 @@ extension AWSDataStorePlugin: DataStoreBaseBehavior {
             return
         }
         let metadata = MutationSyncMetadata.keys
-        let metadataId = MutationSyncMetadata.identifier(modelName: modelSchema.name, modelId: model.id)
+        let metadataId = MutationSyncMetadata.identifier(modelName: modelSchema.name,
+                                                         modelId: model.identifier(schema: modelSchema).stringValue)
         storageEngine.query(MutationSyncMetadata.self,
                             predicate: metadata.id == metadataId,
                             sort: nil,
