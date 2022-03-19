@@ -310,7 +310,7 @@ class MutationEventExtensionsTest: BaseDataStoreTests {
                                      version: Int? = nil,
                                      inProcess: Bool = false) throws -> MutationEvent {
         return MutationEvent(id: UUID().uuidString,
-                             modelId: model.identifier.stringValue,
+                             modelId: model.identifier(schema: MutationEvent.schema).stringValue,
                              modelName: model.modelName,
                              json: try model.toJSON(),
                              mutationType: mutationType,
@@ -319,7 +319,7 @@ class MutationEventExtensionsTest: BaseDataStoreTests {
     }
 
     private func createMutationSync(model: Model, version: Int = 1) -> MutationSync<AnyModel> {
-        let metadata = MutationSyncMetadata(modelId: model.identifier.stringValue,
+        let metadata = MutationSyncMetadata(modelId: model.identifier(schema: MutationEvent.schema).stringValue,
                                             modelName: model.modelName,
                                             deleted: false,
                                             lastChangedAt: Int(Date().timeIntervalSince1970),

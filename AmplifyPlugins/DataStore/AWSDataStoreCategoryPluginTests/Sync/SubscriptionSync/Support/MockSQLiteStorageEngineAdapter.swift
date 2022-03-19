@@ -353,7 +353,7 @@ class MockStorageEngineBehavior: StorageEngineBehavior {
                    withIdentifier identifier: AnyModelIdentifier,
                    predicate: QueryPredicate?,
                    completion: @escaping DataStoreCallback<M?>) where M: Model {
-        XCTFail("Not expected to execute")
+        completion(.success(nil))
     }
 
     func query<M: Model>(_ modelType: M.Type,

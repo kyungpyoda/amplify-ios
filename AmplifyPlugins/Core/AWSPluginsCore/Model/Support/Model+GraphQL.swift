@@ -158,7 +158,7 @@ extension Model {
             return modelValue.identifier(schema: modelSchema).stringValue
         } else if let value = value as? [String: JSONValue],
                   // TODO CPK: fix this when associated model has composite primary key
-                  case .string(let primaryKeyValue) = value[modelSchema.primaryKey[0].name] {
+                  case .string(let primaryKeyValue) = value[modelSchema.primaryKey.fields[0].name] {
             return primaryKeyValue
         }
 
