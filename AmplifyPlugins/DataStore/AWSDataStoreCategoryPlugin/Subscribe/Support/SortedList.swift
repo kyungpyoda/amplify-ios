@@ -26,7 +26,7 @@ class SortedList<ModelType: Model> {
     /// is already sorted (since it performs a binary search insertion).
     func set(sortedModels: [ModelType]) {
         self.sortedModels = sortedModels
-        modelIds = Set(sortedModels.map { $0.id })
+        modelIds = Set(sortedModels.map { $0.identifier(schema: modelSchema).stringValue })
     }
 
     /// Apply the incoming `model` to the sorted array based on the mutation type. This logic accounts for duplicate

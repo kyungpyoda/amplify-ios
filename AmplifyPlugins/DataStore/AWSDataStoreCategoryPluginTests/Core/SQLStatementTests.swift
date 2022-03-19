@@ -37,6 +37,12 @@ class SQLStatementTests: XCTestCase {
         // Secondary Indexes
         ModelRegistry.register(modelType: CustomerSecondaryIndexV2.self)
         ModelRegistry.register(modelType: CustomerMultipleSecondaryIndexV2.self)
+
+        // Custom PK
+        ModelRegistry.register(modelType: ModelImplicitDefaultPk.self)
+        ModelRegistry.register(modelType: ModelExplicitDefaultPk.self)
+        ModelRegistry.register(modelType: ModelExplicitCustomPk.self)
+        ModelRegistry.register(modelType: ModelCompositePk.self)
     }
 
     // MARK: - Create Table
@@ -136,6 +142,61 @@ class SQLStatementTests: XCTestCase {
             on delete cascade
           foreign key("bookId") references "Book"("id")
             on delete cascade
+        );
+        """
+        XCTAssertEqual(statement.stringValue, expectedStatement)
+    }
+
+
+    func testCreateTableFromModelWithImplicitDefaultPk() {
+        let statement = CreateTableStatement(modelSchema: ModelImplicitDefaultPk.schema)
+        let expectedStatement = """
+        create table if not exists "ModelImplicitDefaultPk" (
+          "id" text primary key not null,
+          "createdAt" text,
+          "name" text,
+          "updatedAt" text
+        );
+        """
+        XCTAssertEqual(statement.stringValue, expectedStatement)
+    }
+
+    func testCreateTableFromModelWithExplicitDefaultPk() {
+        let statement = CreateTableStatement(modelSchema: ModelExplicitDefaultPk.schema)
+        let expectedStatement = """
+        create table if not exists "ModelExplicitDefaultPk" (
+          "id" text primary key not null,
+          "createdAt" text,
+          "name" text,
+          "updatedAt" text
+        );
+        """
+        XCTAssertEqual(statement.stringValue, expectedStatement)
+    }
+
+    func testCreateTableFromModelWithCustomPk() {
+        let statement = CreateTableStatement(modelSchema: ModelExplicitCustomPk.schema)
+        let expectedStatement = """
+        create table if not exists "ModelExplicitCustomPk" (
+          "userId" text primary key not null,
+          "createdAt" text,
+          "name" text,
+          "updatedAt" text
+        );
+        """
+        XCTAssertEqual(statement.stringValue, expectedStatement)
+    }
+
+    func testCreateTableFromModelWithCompositePk() {
+        let statement = CreateTableStatement(modelSchema: ModelCompositePk.schema)
+        let expectedStatement = """
+        create table if not exists "ModelCompositePk" (
+          "@@primaryKey" text primary key not null,
+          "id" text not null,
+          "dob" text not null,
+          "createdAt" text,
+          "name" text,
+          "updatedAt" text
         );
         """
         XCTAssertEqual(statement.stringValue, expectedStatement)

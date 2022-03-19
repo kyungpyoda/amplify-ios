@@ -104,6 +104,7 @@ extension Model {
                 // Check if it is a Model or json object.
                 if let value = value as? Model {
                     let associatedModel: Model.Type = type(of: value)
+                    // TODO CPK: should this be a single or multiple values?
                     return value[associatedModel.schema.primaryKey.name] as? String
 
                 } else if let value = value as? [String: JSONValue],

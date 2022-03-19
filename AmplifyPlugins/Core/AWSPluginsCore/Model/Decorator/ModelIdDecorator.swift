@@ -30,7 +30,7 @@ public struct ModelIdDecorator: ModelBasedGraphQLDocumentDecorator {
 
     @available(*, deprecated, message: "Use init(model:schema:)")
     public init(id: Model.Identifier, fields: [String: String]? = nil) {
-        let identifier = (name: DefaultModelIdentifier<AnyModel>.defaultIdentifier, value: id)
+        let identifier = (name: ModelIdentifierFormat.Default.name, value: id)
         var identifierFields = [identifier]
 
         if let fields = fields {
@@ -58,7 +58,7 @@ public struct ModelIdDecorator: ModelBasedGraphQLDocumentDecorator {
 
         } else if case .query = document.operationType {
             for (name, value) in identifierFields {
-                let graphQLInput = name == DefaultModelIdentifier<AnyModel>.defaultIdentifier ?
+                let graphQLInput = name == ModelIdentifierFormat.Default.name ?
                     GraphQLDocumentInput(type: "ID!", value: .scalar(value)) :
                     GraphQLDocumentInput(type: "String!", value: .scalar(value))
                 inputs[name] = graphQLInput
