@@ -133,6 +133,7 @@ public struct ModelSchemaDefinition {
 
     public var authRules: AuthRules
     internal var fields: ModelFields
+    internal var primaryKeyFieldKeys: [ModelFieldName]
     internal var attributes: [ModelAttribute]
 
     init(name: String,
@@ -148,12 +149,18 @@ public struct ModelSchemaDefinition {
         self.fields = [:] as ModelFields
         self.authRules = authRules
         self.attributes = attributes
+        self.primaryKeyFieldKeys = []
     }
 
     public mutating func fields(_ fields: ModelFieldDefinition...) {
         fields.forEach { definition in
-            let field = definition.modelField
-            self.fields[field.name] = field
+            switch definition {
+            case .field:
+                let field = definition.modelField
+                self.fields[field.name] = field
+            case .primaryKey(fields: let fieldNames):
+                self.primaryKeyFieldKeys = fieldNames
+            }
         }
     }
 
@@ -168,13 +175,16 @@ public struct ModelSchemaDefinition {
                            syncPluralName: syncPluralName,
                            authRules: authRules,
                            attributes: attributes,
-                           fields: fields)
+                           fields: fields,
+                           primaryKeyFieldKeys: primaryKeyFieldKeys)
     }
 }
 
 /// - Warning: Although this has `public` access, it is intended for internal & codegen use and should not be used
 ///   directly by host applications. The behavior of this may change without warning.
 public enum ModelFieldDefinition {
+
+    case primaryKey(fields: [String])
 
     case field(name: String,
                type: ModelFieldType,
@@ -200,6 +210,7 @@ public enum ModelFieldDefinition {
                       authRules: authRules)
     }
 
+    @available(*, deprecated, message: "Use .field(name:type:attributes: [.primaryKey])")
     public static func id(_ key: CodingKey) -> ModelFieldDefinition {
         return id(key.stringValue)
     }

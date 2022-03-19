@@ -30,11 +30,17 @@ public protocol Model: Codable {
 
 extension Model {
     public func identifier(schema: ModelSchema) -> AnyModelIdentifier {
-        let fields: AnyModelIdentifier.Fields = schema.primaryKey.map {
+        // Dynamic models don't have fields
+        // TODO CPK: how to use this with flutter and dynamic models
+        guard !schema.fields.isEmpty else {
+            return DefaultModelIdentifier<Self>.makeDefault(id: self[ModelIdentifierFormat.Default.name] as! String)
+        }
+
+        let fields: AnyModelIdentifier.Fields = schema.primaryKey.fields.map {
             let value = self[$0.name] as? Persistable ?? ""
             return (name: $0.name, value: value)
         }
-        if fields.count == 1, fields[0].name == ModelIdentifier<Self, ModelIdentifierFormat.Default>.defaultIdentifier {
+        if fields.count == 1, fields[0].name == ModelIdentifierFormat.Default.name {
             return ModelIdentifier<Self, ModelIdentifierFormat.Default>(fields: fields)
         } else {
             return ModelIdentifier<Self, ModelIdentifierFormat.Custom>(fields: fields)

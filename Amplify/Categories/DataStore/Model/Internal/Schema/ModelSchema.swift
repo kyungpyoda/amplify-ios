@@ -39,6 +39,7 @@ public struct ModelField {
     public let association: ModelAssociation?
     public let authRules: AuthRules
 
+    @available(*, deprecated, message: "Use the primaryKey member of the schema")
     public var isPrimaryKey: Bool {
         return attributes.contains { $0 == .primaryKey }
     }
@@ -84,31 +85,17 @@ public struct ModelSchema {
     public let authRules: AuthRules
     public let fields: ModelFields
     public let attributes: [ModelAttribute]
+    public let indexes: [ModelAttribute]
 
     public let sortedFields: [ModelField]
 
-    public var primaryKey: [ModelField] {
-        var primaryKeysFields: [String: ModelField] = [:]
-
-        /// if indexes aren't defined most likely the model has a default `id` as PK
-        /// so we have to rely on the `.primaryKey` attribute of each individual field
-        if indexes.isEmpty {
-            primaryKeysFields = fields.filter { $1.isPrimaryKey }
-        
-        /// Use the array of fields with a primary key index
-        } else if let fieldNames = primaryKeyIndexFields {
-            primaryKeysFields = Dictionary(uniqueKeysWithValues: fieldNames.compactMap {
-                if let field = field(withName: $0) {
-                    return ($0, field)
-                }
-                return nil
-            })
-        }
-
-        guard !primaryKeysFields.isEmpty else {
+    //swiftlint:disable:next identifier_name
+    public var _primaryKey: ModelPrimaryKey?
+    public var primaryKey: ModelPrimaryKey {
+        guard let primaryKey = _primaryKey else {
             preconditionFailure("Primary Key not defined for `\(name)`")
         }
-        return primaryKeysFields.map { $0.value }
+        return primaryKey
     }
 
     public init(name: String,
@@ -117,7 +104,8 @@ public struct ModelSchema {
                 syncPluralName: String? = nil,
                 authRules: AuthRules = [],
                 attributes: [ModelAttribute] = [],
-                fields: ModelFields = [:]) {
+                fields: ModelFields = [:],
+                primaryKeyFieldKeys: [ModelFieldName] = []) {
         self.name = name
         self.pluralName = pluralName
         self.listPluralName = listPluralName
@@ -125,23 +113,39 @@ public struct ModelSchema {
         self.authRules = authRules
         self.attributes = attributes
         self.fields = fields
+        self.indexes = attributes.indexes
+        self._primaryKey = ModelPrimaryKey(modelName: name,
+                                          allFields: fields,
+                                          attributes: attributes,
+                                          primaryKeyFieldKeys: primaryKeyFieldKeys)
 
-        self.sortedFields = fields.sortedFields()
+        let indexOfPrimaryKeyField = _primaryKey?.indexOfField ?? { (_: String) in -1 }
+        self.sortedFields = fields.sortedFields(indexOfPrimaryKeyField: indexOfPrimaryKeyField)
     }
 
     public func field(withName name: String) -> ModelField? {
         return fields[name]
     }
-
 }
 
 // MARK: - ModelAttribute + Index
 
+extension ModelAttribute {
+    /// Convenience method to check if a model attribute is a primary key index
+    var isPrimaryKeyIndex: Bool {
+        if case let .index(fields: fields, name: name) = self,
+           name == nil, fields.count >= 1 {
+            return true
+        }
+        return false
+    }
+}
+
 /// - Warning: Although this has `public` access, it is intended for internal & codegen use and should not be used
 ///   directly by host applications. The behavior of this may change without warning.
-public extension ModelSchema {
+extension Array where Element == ModelAttribute {
     var indexes: [ModelAttribute] {
-        attributes.filter {
+        filter {
             switch $0 {
             case .index:
                 return true
@@ -150,13 +154,15 @@ public extension ModelSchema {
             }
         }
     }
+}
 
+public extension ModelSchema {
     /// Returns the list of fields that make up the primary key for the model.
     /// In case of a custom primary key, the model has a `@key` directive
     /// without a name and at least 1 field
     var primaryKeyIndexFields: [ModelFieldName]? {
         attributes.compactMap {
-            if case let .index(fields, name) = $0, name == nil, fields.count >= 1 {
+            if case let .index(fields, name) = $0, $0.isPrimaryKeyIndex {
                 return fields
             }
             return nil
@@ -170,18 +176,22 @@ extension Dictionary where Key == String, Value == ModelField {
 
     /// Returns an array of the values sorted by some pre-defined rules:
     ///
-    /// 1. primary key always comes first
+    /// 1. primary key always comes first (sorted based on their schema declaration order in case of a composite key)
     /// 2. foreign keys always come at the end
     /// 3. the remaining fields are sorted alphabetically
     ///
     /// This is useful so code that uses the fields to generate queries and other
     /// persistence-related operations guarantee that the results are always consistent.
-    func sortedFields() -> [Value] {
+    func sortedFields(indexOfPrimaryKeyField: (ModelFieldName) -> Int?) -> [Value] {
         return values.sorted { one, other in
-            if one.isPrimaryKey {
+            if let oneIndex = indexOfPrimaryKeyField(one.name), let otherIndex = indexOfPrimaryKeyField(other.name) {
+                return oneIndex < otherIndex
+            }
+
+            if indexOfPrimaryKeyField(one.name) != nil {
                 return true
             }
-            if other.isPrimaryKey {
+            if indexOfPrimaryKeyField(other.name) != nil {
                 return false
             }
             if one.hasAssociation && !other.hasAssociation {
@@ -200,5 +210,9 @@ extension Dictionary where Key == String, Value == ModelField {
 public extension Array where Element == ModelField {
     var isRequired: Bool {
         allSatisfy { $0.isRequired }
+    }
+
+    var name: String {
+        count == 1 ? self[0].name : ModelIdentifierFormat.Custom.name
     }
 }

@@ -9,7 +9,7 @@
 import Amplify
 import Foundation
 
-extension ModelCompositePk {
+extension ModelCustomPkDefined {
   // MARK: - CodingKeys
    public enum CodingKeys: String, ModelKey {
     case id
@@ -23,15 +23,17 @@ extension ModelCompositePk {
   //  MARK: - ModelSchema
 
   public static let schema = defineSchema { model in
-    let modelCompositePk = ModelCompositePk.keys
+    let modelCompositePk = ModelCustomPkDefined.keys
 
-    model.pluralName = "ModelCompositePks"
+    model.pluralName = "ModelCustomPkDefined"
 
     model.attributes(
-      .index(fields: ["id", "dob"], name: nil)
+        .index(fields: ["dob"], name: "byDob"),
+        .index(fields: ["name"], name: "byName")
     )
 
     model.fields(
+        .primaryKey(fields: ["id", "dob"]),
         .field(modelCompositePk.id, is: .required, ofType: .string),
         .field(modelCompositePk.dob, is: .required, ofType: .dateTime),
         .field(modelCompositePk.name, is: .optional, ofType: .string),

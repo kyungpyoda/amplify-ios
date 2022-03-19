@@ -12,8 +12,19 @@ public protocol AnyModelIdentifierFormat {}
 
 /// Defines the identifier (primary key) format
 public enum ModelIdentifierFormat {
-    public enum Default: AnyModelIdentifierFormat {} // id
-    public enum Custom: AnyModelIdentifierFormat {} // Custom or Composite
+    /// Default identifier ("id")
+    public enum Default: AnyModelIdentifierFormat {
+        public static let name = "id"
+    }
+
+    /// Custom or Composite identifier
+    public enum Custom: AnyModelIdentifierFormat {
+        /// Separator used to derive value of composite key
+        public static let separator = "#"
+
+        /// Name for composite identifier (multiple fields)
+        public static let name = "@@primaryKey"
+    }
 }
 
 /// Define requirements for a model to be identifiable with a unique identifier
@@ -36,7 +47,7 @@ public protocol AnyModelIdentifier {
 
 public extension AnyModelIdentifier {
     var stringValue: String {
-        fields.map { "\($0.value)" }.joined(separator: "#")
+        fields.map { "\($0.value)" }.joined(separator: ModelIdentifierFormat.Custom.separator)
     }
 
     var keys: [String] {
@@ -58,10 +69,9 @@ public extension AnyModelIdentifier {
 
 public struct ModelIdentifier<M: Model, F: AnyModelIdentifierFormat>: AnyModelIdentifier {
     public var fields: Fields
-    public static var defaultIdentifier: String { "id" }
 
     public static func makeDefault(id: String) -> ModelIdentifier<M, ModelIdentifierFormat.Default> {
-        ModelIdentifier<M, ModelIdentifierFormat.Default>(fields: [(name: Self.defaultIdentifier, value: id)])
+        ModelIdentifier<M, ModelIdentifierFormat.Default>(fields: [(name: ModelIdentifierFormat.Default.name, value: id)])
     }
 }
 
