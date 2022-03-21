@@ -425,8 +425,9 @@ class ReconcileAndLocalSaveOperation: AsynchronousOperation {
             log.error("Could not notify mutation event")
             return
         }
-        // TODO CPK: should we send the model identifier?
-        let mutationEvent = MutationEvent(modelId: savedModel.model.instance.identifier(schema: modelSchema).stringValue,
+        // TODO CPK: should we send the moxel identifier?
+        let modelIdentifier = savedModel.model.instance.identifier(schema: modelSchema).stringValue
+        let mutationEvent = MutationEvent(modelId: modelIdentifier,
                                           modelName: modelSchema.name,
                                           json: json,
                                           mutationType: mutationType,

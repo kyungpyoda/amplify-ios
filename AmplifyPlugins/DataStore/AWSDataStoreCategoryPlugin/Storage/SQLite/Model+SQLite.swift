@@ -70,6 +70,9 @@ extension Model {
             //   can't handle
             if let jsonModel = self as? JSONValueHolder {
                 existingFieldOptionalValue = jsonModel.jsonValue(for: field.name, modelSchema: modelSchema)
+            } else if field.name == ModelIdentifierFormat.Custom.name {
+                // TODO CPK: how to handle this with dynamic models?
+                existingFieldOptionalValue = self.identifier(schema: modelSchema).stringValue
             } else {
                 existingFieldOptionalValue = self[field.name]
             }
@@ -104,7 +107,6 @@ extension Model {
                 // Check if it is a Model or json object.
                 if let value = value as? Model {
                     let associatedModel: Model.Type = type(of: value)
-                    // TODO CPK: should this be a single or multiple values?
                     return value[associatedModel.schema.primaryKey.name] as? String
 
                 } else if let value = value as? [String: JSONValue],
@@ -188,4 +190,9 @@ extension Array where Element == ModelSchema {
             modelSchema.hasAssociations
         }
     }
+}
+
+extension ModelIdentifierFormat.Custom {
+    /// Name for composite identifier (multiple fields)
+    public static let name = "@@primaryKey"
 }

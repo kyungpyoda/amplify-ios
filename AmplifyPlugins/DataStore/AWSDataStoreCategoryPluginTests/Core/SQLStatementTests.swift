@@ -261,6 +261,34 @@ class SQLStatementTests: XCTestCase {
 
     /// - Given: a `Model` instance
     /// - When:
+    ///   - the model has a composite pk
+    /// - Then:
+    ///   - check if the generated SQL statement is valid
+    ///   - check if the variables match the expected values
+    func testInsertStatementFromModelWithCompositePK() {
+
+        let modelId = "the-id"
+        let dob = Temporal.DateTime.now()
+        let model = ModelCompositePk(id: modelId,
+                                     dob: dob,
+                                     name: "the-name")
+        let statement = InsertStatement(model: model, modelSchema: model.schema)
+
+        let expectedStatement = """
+        insert into "ModelCompositePk" ("@@primaryKey", "id", "dob", "createdAt", "name", "updatedAt")
+        values (?, ?, ?, ?, ?, ?)
+        """
+        XCTAssertEqual(statement.stringValue, expectedStatement)
+
+        let variables = statement.variables
+        XCTAssertEqual(variables[0] as? String, "\(modelId)#\(dob)")
+        XCTAssertEqual(variables[1] as? String, modelId)
+        XCTAssertEqual(variables[2] as? String, dob.iso8601String)
+        XCTAssertEqual(variables[4] as? String, "the-name")
+    }
+
+    /// - Given: a `Model` instance
+    /// - When:
     ///   - the model is of type `Comment`
     ///   - it has a reference to another `Post`
     /// - Then:
@@ -346,6 +374,71 @@ class SQLStatementTests: XCTestCase {
         XCTAssertEqual(variables[5] as? String, "title")
         XCTAssertEqual(variables[7] as? String, post.id)
     }
+
+    /// - Given: a `Model` instance
+    /// - When:
+    ///   - the model has a custom primary key defined as a model schema attribute
+    /// - Then:
+    ///   - check if the generated SQL statement is valid
+    ///   - check if the variables match the expected values
+    func testUpdateStatementFromModelWithDefinedCustomPK() {
+        let modelId = "the-id"
+        let dob = Temporal.DateTime.now()
+        let model = ModelCustomPkDefined(id: modelId,
+                                         dob: dob,
+                                         name: "the-name")
+        let statement = UpdateStatement(model: model, modelSchema: model.schema)
+        let expectedStatement = """
+        update ModelCustomPkDefined
+        set
+          "id" = ?,
+          "dob" = ?,
+          "createdAt" = ?,
+          "name" = ?,
+          "updatedAt" = ?
+        where "@@primaryKey" = ?
+        """
+        XCTAssertEqual(statement.stringValue, expectedStatement)
+
+        let variables = statement.variables
+        XCTAssertEqual(variables[0] as? String, modelId)
+        XCTAssertEqual(variables[1] as? String, dob.iso8601String)
+        XCTAssertEqual(variables[3] as? String, "the-name")
+        XCTAssertEqual(variables[5] as? String, model.identifier(schema: model.schema).stringValue)
+    }
+
+    /// - Given: a `Model` instance
+    /// - When:
+    ///   - the model has a custom primary key defined with indexes (backward compatibility)
+    /// - Then:
+    ///   - check if the generated SQL statement is valid
+    ///   - check if the variables match the expected values
+    func testUpdateStatementFromModelWithCustomPKBasedOnIndexes() {
+        let modelId = "the-id"
+        let dob = Temporal.DateTime.now()
+        let model = ModelCompositePk(id: modelId,
+                                     dob: dob,
+                                     name: "the-name")
+        let statement = UpdateStatement(model: model, modelSchema: model.schema)
+        let expectedStatement = """
+        update ModelCompositePk
+        set
+          "id" = ?,
+          "dob" = ?,
+          "createdAt" = ?,
+          "name" = ?,
+          "updatedAt" = ?
+        where "@@primaryKey" = ?
+        """
+        XCTAssertEqual(statement.stringValue, expectedStatement)
+
+        let variables = statement.variables
+        XCTAssertEqual(variables[0] as? String, modelId)
+        XCTAssertEqual(variables[1] as? String, dob.iso8601String)
+        XCTAssertEqual(variables[3] as? String, "the-name")
+        XCTAssertEqual(variables[5] as? String, model.identifier(schema: model.schema).stringValue)
+    }
+
 
     // MARK: - Delete Statements
 

@@ -71,7 +71,7 @@ extension ModelPrimaryKey: SQLColumn {
             return "\(namespace).\(ModelIdentifierFormat.Custom.name)"
         }
 
-        return ModelIdentifierFormat.Custom.name
+        return ModelIdentifierFormat.Custom.name.quoted()
     }
 }
 
