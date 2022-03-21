@@ -12,17 +12,26 @@ public typealias ModelFieldName = String
 /// - Warning: Although this has `public` access, it is intended for internal & codegen use and should not be used
 ///   directly by host applications. The behavior of this may change without warning.
 public enum ModelAttribute: Equatable {
-
     /// Represents a database index, often used for frequent query optimizations.
     case index(fields: [ModelFieldName], name: String?)
 
     /// This model is used by the Amplify system or a plugin, and should not be used by the app developer
     case isSystem
+
+    /// Defines the primary key for the schema.
+    case primaryKey(fields: [ModelFieldName])
+
+    /// Convenience factory method to initialize a `.primaryKey` attribute by
+    /// using the model coding keys
+    public static func primaryKey(fields: [CodingKey]) -> ModelAttribute {
+        return .primaryKey(fields: fields.map { $0.stringValue })
+    }
 }
 
 /// - Warning: Although this has `public` access, it is intended for internal & codegen use and should not be used
 ///   directly by host applications. The behavior of this may change without warning.
 public enum ModelFieldAttribute {
+    @available(*, deprecated, message: "Use the primaryKey member of the schema")
     case primaryKey
 }
 
@@ -202,17 +211,5 @@ extension Dictionary where Key == String, Value == ModelField {
             }
             return one.name < other.name
         }
-    }
-}
-
-// MARK: Array + ModelField
-
-public extension Array where Element == ModelField {
-    var isRequired: Bool {
-        allSatisfy { $0.isRequired }
-    }
-
-    var name: String {
-        count == 1 ? self[0].name : ModelIdentifierFormat.Custom.name
     }
 }

@@ -14,9 +14,9 @@ public struct ModelPrimaryKey {
     }
 
     init?(modelName: String,
-         allFields: ModelFields,
-         attributes: [ModelAttribute],
-         primaryKeyFieldKeys: [String] = []) {
+          allFields: ModelFields,
+          attributes: [ModelAttribute],
+          primaryKeyFieldKeys: [String] = []) {
         self.fields = resolvePrimaryKeyFields(modelName: modelName,
                                               allFields: allFields,
                                               attributes: attributes,

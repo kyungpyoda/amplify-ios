@@ -28,12 +28,12 @@ extension ModelCustomPkDefined {
     model.pluralName = "ModelCustomPkDefined"
 
     model.attributes(
+        .primaryKey(fields: [modelCompositePk.id, modelCompositePk.dob]),
         .index(fields: ["dob"], name: "byDob"),
         .index(fields: ["name"], name: "byName")
     )
 
     model.fields(
-        .primaryKey(fields: ["id", "dob"]),
         .field(modelCompositePk.id, is: .required, ofType: .string),
         .field(modelCompositePk.dob, is: .required, ofType: .dateTime),
         .field(modelCompositePk.name, is: .optional, ofType: .string),

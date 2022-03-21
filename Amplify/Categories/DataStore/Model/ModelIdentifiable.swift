@@ -21,9 +21,6 @@ public enum ModelIdentifierFormat {
     public enum Custom: AnyModelIdentifierFormat {
         /// Separator used to derive value of composite key
         public static let separator = "#"
-
-        /// Name for composite identifier (multiple fields)
-        public static let name = "@@primaryKey"
     }
 }
 
@@ -71,7 +68,16 @@ public struct ModelIdentifier<M: Model, F: AnyModelIdentifierFormat>: AnyModelId
     public var fields: Fields
 
     public static func makeDefault(id: String) -> ModelIdentifier<M, ModelIdentifierFormat.Default> {
-        ModelIdentifier<M, ModelIdentifierFormat.Default>(fields: [(name: ModelIdentifierFormat.Default.name, value: id)])
+        ModelIdentifier<M, ModelIdentifierFormat.Default>(fields: [
+            (name: ModelIdentifierFormat.Default.name, value: id)
+        ])
+    }
+
+    public static func makeDefault(fromModel model: M) -> ModelIdentifier<M, ModelIdentifierFormat.Default> {
+        guard let idValue = model[ModelIdentifierFormat.Default.name] as? String else {
+            fatalError("Couldn't find default identifier for model \(model)")
+        }
+        return .makeDefault(id: idValue)
     }
 }
 
@@ -86,4 +92,3 @@ public extension ModelIdentifier where F == ModelIdentifierFormat.Custom {
 }
 
 public typealias DefaultModelIdentifier<M: Model> = ModelIdentifier<M, ModelIdentifierFormat.Default>
-

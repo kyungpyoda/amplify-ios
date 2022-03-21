@@ -33,7 +33,7 @@ extension Model {
         // Dynamic models don't have fields
         // TODO CPK: how to use this with flutter and dynamic models
         guard !schema.fields.isEmpty else {
-            return DefaultModelIdentifier<Self>.makeDefault(id: self[ModelIdentifierFormat.Default.name] as! String)
+            return DefaultModelIdentifier<Self>.makeDefault(fromModel: self)
         }
 
         let fields: AnyModelIdentifier.Fields = schema.primaryKey.fields.map {

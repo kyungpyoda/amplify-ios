@@ -133,7 +133,7 @@ public struct ModelSchemaDefinition {
 
     public var authRules: AuthRules
     internal var fields: ModelFields
-    internal var primaryKeyFieldKeys: [ModelFieldName]
+    internal var primarykeyFields: [ModelFieldName]
     internal var attributes: [ModelAttribute]
 
     init(name: String,
@@ -149,23 +149,29 @@ public struct ModelSchemaDefinition {
         self.fields = [:] as ModelFields
         self.authRules = authRules
         self.attributes = attributes
-        self.primaryKeyFieldKeys = []
+        self.primarykeyFields = []
     }
 
     public mutating func fields(_ fields: ModelFieldDefinition...) {
         fields.forEach { definition in
-            switch definition {
-            case .field:
-                let field = definition.modelField
-                self.fields[field.name] = field
-            case .primaryKey(fields: let fieldNames):
-                self.primaryKeyFieldKeys = fieldNames
-            }
+            let field = definition.modelField
+            self.fields[field.name] = field
         }
     }
 
     public mutating func attributes(_ attributes: ModelAttribute...) {
         self.attributes = attributes
+        let primaryKeyDefinition: [[ModelFieldName]] = attributes.compactMap {
+            if case let .primaryKey(fields: fields) = $0 {
+                return fields
+            }
+            return nil
+        }
+
+        if primaryKeyDefinition.count > 1 {
+            fatalError("Multiple primary key definitions found on schema \(name)")
+        }
+        primarykeyFields = primaryKeyDefinition.first ?? []
     }
 
     internal func build() -> ModelSchema {
@@ -176,16 +182,13 @@ public struct ModelSchemaDefinition {
                            authRules: authRules,
                            attributes: attributes,
                            fields: fields,
-                           primaryKeyFieldKeys: primaryKeyFieldKeys)
+                           primaryKeyFieldKeys: primarykeyFields)
     }
 }
 
 /// - Warning: Although this has `public` access, it is intended for internal & codegen use and should not be used
 ///   directly by host applications. The behavior of this may change without warning.
 public enum ModelFieldDefinition {
-
-    case primaryKey(fields: [String])
-
     case field(name: String,
                type: ModelFieldType,
                nullability: ModelFieldNullability,
@@ -210,12 +213,12 @@ public enum ModelFieldDefinition {
                       authRules: authRules)
     }
 
-    @available(*, deprecated, message: "Use .field(name:type:attributes: [.primaryKey])")
+    @available(*, deprecated, message: "Use .primaryKey(fields:)")
     public static func id(_ key: CodingKey) -> ModelFieldDefinition {
         return id(key.stringValue)
     }
 
-    @available(*, deprecated, message: "Use .field(name:type:attributes: [.primaryKey])")
+    @available(*, deprecated, message: "Use .primaryKey(fields:)")
     public static func id(_ name: String = "id") -> ModelFieldDefinition {
         return .field(name: name,
                       type: .string,
