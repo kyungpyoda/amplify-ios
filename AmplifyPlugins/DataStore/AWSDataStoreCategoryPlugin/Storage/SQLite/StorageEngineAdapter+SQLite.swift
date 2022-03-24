@@ -310,7 +310,7 @@ final class SQLiteStorageEngineAdapter: StorageEngineAdapter {
         guard let connection = connection else {
             throw DataStoreError.nilSQLiteConnection()
         }
-        let primaryKey = modelSchema.primaryKey.sqlName
+        let primaryKey = modelSchema.primaryKey.sqlName.quoted()
         var sql = "select count(\(primaryKey)) from \"\(modelSchema.name)\" where \(primaryKey) = ?"
         var variables: [Binding?] = [id.stringValue]
         if let predicate = predicate {

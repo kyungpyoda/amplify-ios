@@ -12,6 +12,7 @@ import Foundation
 /// All persistent models should conform to the Model protocol.
 public protocol Model: Codable {
     /// Alias of Model identifier (i.e. primary key)
+    @available(*, deprecated, message: "Use ModelIdentifier")
     typealias Identifier = String
 
     /// A reference to the `ModelSchema` associated with this model.
@@ -25,10 +26,22 @@ public protocol Model: Codable {
     /// undefined behavior.
     var modelName: String { get }
 
+    /// For internal use only when a model schema is provided
+    /// (i.e. calls from Flutter)
     func identifier(schema: ModelSchema) -> AnyModelIdentifier
+    
+    /// Convenience property to access the serialized value of a model identifier
+    var identifier: String { get }
 }
 
 extension Model {
+    public var identifier: String {
+        guard let schema = ModelRegistry.modelSchema(from: self.modelName) else {
+            fatalError("Schema Not found for \(modelName)")
+        }
+        return identifier(schema: schema).stringValue
+    }
+    
     public func identifier(schema: ModelSchema) -> AnyModelIdentifier {
         // Dynamic models don't have fields
         // TODO CPK: how to use this with flutter and dynamic models

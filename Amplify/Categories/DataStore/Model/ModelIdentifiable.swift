@@ -66,19 +66,6 @@ public extension AnyModelIdentifier {
 
 public struct ModelIdentifier<M: Model, F: AnyModelIdentifierFormat>: AnyModelIdentifier {
     public var fields: Fields
-
-    public static func makeDefault(id: String) -> ModelIdentifier<M, ModelIdentifierFormat.Default> {
-        ModelIdentifier<M, ModelIdentifierFormat.Default>(fields: [
-            (name: ModelIdentifierFormat.Default.name, value: id)
-        ])
-    }
-
-    public static func makeDefault(fromModel model: M) -> ModelIdentifier<M, ModelIdentifierFormat.Default> {
-        guard let idValue = model[ModelIdentifierFormat.Default.name] as? String else {
-            fatalError("Couldn't find default identifier for model \(model)")
-        }
-        return .makeDefault(id: idValue)
-    }
 }
 
 public extension ModelIdentifier where F == ModelIdentifierFormat.Custom {
@@ -92,3 +79,17 @@ public extension ModelIdentifier where F == ModelIdentifierFormat.Custom {
 }
 
 public typealias DefaultModelIdentifier<M: Model> = ModelIdentifier<M, ModelIdentifierFormat.Default>
+extension DefaultModelIdentifier {
+    public static func makeDefault(id: String) -> ModelIdentifier<M, ModelIdentifierFormat.Default> {
+        ModelIdentifier<M, ModelIdentifierFormat.Default>(fields: [
+            (name: ModelIdentifierFormat.Default.name, value: id)
+        ])
+    }
+
+    public static func makeDefault(fromModel model: M) -> ModelIdentifier<M, ModelIdentifierFormat.Default> {
+        guard let idValue = model[ModelIdentifierFormat.Default.name] as? String else {
+            fatalError("Couldn't find default identifier for model \(model)")
+        }
+        return .makeDefault(id: idValue)
+    }
+}

@@ -102,14 +102,14 @@ extension AWSDataStorePlugin: DataStoreBaseBehavior {
         initStorageEngineAndStartSync()
         query(modelType, where: identifier.predicate, paginate: .firstResult) {
             switch $0 {
-             case .success(let models):
+            case .success(let models):
                  do {
                      let first = try models.unique()
                      completion(.success(first))
                  } catch {
                      completion(.failure(causedBy: error))
                  }
-             case .failure(let error):
+            case .failure(let error):
                  completion(.failure(causedBy: error))
              }
          }

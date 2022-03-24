@@ -67,11 +67,12 @@ extension ModelPrimaryKey: SQLColumn {
             return field.columnName(forNamespace: namespace)
         }
 
+        let columnName = ModelIdentifierFormat.Custom.name.quoted()
         if let namespace = namespace {
-            return "\(namespace).\(ModelIdentifierFormat.Custom.name)"
+            return "\(namespace.quoted()).\(columnName)"
         }
 
-        return ModelIdentifierFormat.Custom.name.quoted()
+        return columnName
     }
 }
 

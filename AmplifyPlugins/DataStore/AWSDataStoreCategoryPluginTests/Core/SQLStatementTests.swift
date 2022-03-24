@@ -511,6 +511,22 @@ class SQLStatementTests: XCTestCase {
 
     /// - Given: a `Model` type
     /// - When:
+    ///   - the model is of type `ModelCompositePk` and has a composite PK
+    /// - Then:
+    ///   - check if the generated SQL statement is valid
+    func testSelectStatementFromModelWithCompositePK() {
+        let statement = SelectStatement(from: ModelCompositePk.schema)
+        let expectedStatement = """
+        select
+          "root"."@@primaryKey" as "@@primaryKey", "root"."id" as "id", "root"."dob" as "dob",
+          "root"."createdAt" as "createdAt", "root"."name" as "name", "root"."updatedAt" as "updatedAt"
+        from "ModelCompositePk" as "root"
+        """
+        XCTAssertEqual(statement.stringValue, expectedStatement)
+    }
+
+    /// - Given: a `Model` type
+    /// - When:
     ///   - the model is of type `Post`
     ///   - a predicate with a few conditions
     /// - Then:
@@ -537,6 +553,23 @@ class SQLStatementTests: XCTestCase {
         let variables = statement.variables
         XCTAssertEqual(variables[0] as? Int, 0)
         XCTAssertEqual(variables[1] as? Int, 3)
+    }
+
+    /// - Given: a `Model` type
+    /// - When:
+    ///   - the model is of type `Post`
+    /// - Then:
+    ///   - check if the generated SQL statement is valid
+    func testSelectStatementWithPredicateFromModelWithCompositePK() {
+        let keys = ModelCompositePk.keys
+        let statement = SelectStatement(from: ModelCompositePk.schema)
+        let expectedStatement = """
+        select
+          "root"."@@primaryKey" as "@@primaryKey", "root"."id" as "id", "root"."dob" as "dob",
+          "root"."createdAt" as "createdAt", "root"."name" as "name", "root"."updatedAt" as "updatedAt"
+        from "ModelCompositePk" as "root"
+        """
+        XCTAssertEqual(statement.stringValue, expectedStatement)
     }
 
     /// - Given: a `Model` type
